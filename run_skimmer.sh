@@ -1,37 +1,52 @@
 #srun --ntasks=1 --cpus-per-task=8 --mem=16gb -t 600 --pty bash -i
 
 echo -e "Sample,Passed Trigger,Had No b Jets,Found 3 Good Muons,Found Z' Candidate,Overall Efficiency" > Tables/cut_list.txt
-echo -e "Sample,Medium Id,Sip3d,dxy,dz,Isolation" > Tables/GoodMu_list.txt
-echo -e "Sample,Muon Signs,Leading pT,Subleading pT,Trailing pT,3 Muon Invariant Mass" > Tables/ZpCandidate_list.txt
+echo -e "Sample,Failed 3 Good Muon,Medium Id,Sip3d,dxy,dz,Isolation" > Tables/GoodMu_list.txt
+echo -e "Sample,Failed Z' Candidate,Muon Signs,Leading pT,Subleading pT,Trailing pT,3 Muon Invariant Mass" > Tables/ZpCandidate_list.txt
 
-dataset_list=()
-isMC=()
+bkg_list=()
+data_list=()
+sig_list=()
 
-dataset_list+=( "DYJetsToLL_M10To50" )
-dataset_list+=( "DYJetsToLL_M50" )
-dataset_list+=( "TTJets_DiLept" )
-dataset_list+=( "WZTo3LNu" )
-dataset_list+=( "ZZTo4L" )
-dataset_list+=( "WJetsToLNu" )
-dataset_list+=( "WWTo2L2Nu" )
+bkg_list+=( "DYJetsToLL_M10To50" )
+bkg_list+=( "DYJetsToLL_M50" )
+bkg_list+=( "TTJets_DiLept" )
+bkg_list+=( "WZTo3LNu" )
+bkg_list+=( "ZZTo4L" )
+bkg_list+=( "WJetsToLNu" )
+bkg_list+=( "WWTo2L2Nu" )
 
-dataset_list+=( "DoubleMuon_B" )
-dataset_list+=( "DoubleMuon_C" )
-dataset_list+=( "DoubleMuon_D" )
-dataset_list+=( "DoubleMuon_E" )
-dataset_list+=( "DoubleMuon_F" )
+data_list+=( "DoubleMuon_B" )
+data_list+=( "DoubleMuon_C" )
+data_list+=( "DoubleMuon_D" )
+data_list+=( "DoubleMuon_E" )
+data_list+=( "DoubleMuon_F" )
 
-dataset_list+=( "Wto3l_M1" )
-dataset_list+=( "Wto3l_M4" )
-dataset_list+=( "Wto3l_M5" )
-dataset_list+=( "Wto3l_M10" )
-dataset_list+=( "Wto3l_M15" )
-dataset_list+=( "Wto3l_M30" )
-dataset_list+=( "Wto3l_M60" )
+sig_list+=( "Wto3l_M1" )
+sig_list+=( "Wto3l_M4" )
+sig_list+=( "Wto3l_M5" )
+sig_list+=( "Wto3l_M10" )
+sig_list+=( "Wto3l_M15" )
+sig_list+=( "Wto3l_M30" )
+sig_list+=( "Wto3l_M60" )
 
-for i in ${!dataset_list[@]}; do
-	python skimmer.py ${dataset_list[i]}
+echo -e "Sample,Sum Weight,Trigger,b Jets,3 Good Muons,Found Z'" > Tables/counts_list.txt
+for i in ${!bkg_list[@]}; do
+	python skimmer.py ${bkg_list[i]}
 done
+python Tables/combine_samples.py bkg
+
+echo -e "Sample,Sum Weight,Trigger,b Jets,3 Good Muons,Found Z'" > Tables/counts_list.txt
+for i in ${!data_list[@]}; do
+    python skimmer.py ${data_list[i]}
+done
+python Tables/combine_samples.py data
+
+echo -e "Sample,Sum Weight,Trigger,b Jets,3 Good Muons,Found Z'" > Tables/counts_list.txt
+for i in ${!sig_list[@]}; do
+    python skimmer.py ${sig_list[i]}
+done
+python Tables/combine_samples.py sig
 
 python3 Tables/pretty_table.py > Tables/Efficiency_table.txt
 cat Tables/Efficiency_table.txt

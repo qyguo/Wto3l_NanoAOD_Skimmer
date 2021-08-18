@@ -42,10 +42,12 @@ if isMC==1:
 	sumW = 0
 	SumWeights = runs["genEventSumw"].array()
 	sumW = np.sum(SumWeights)
+else:
+	sumW = 1
 
 #Define cuts
 cut0, cut1, cut2, cut3, cut4 = 0, 0, 0, 0, 0
-leadingPtCut, subleadingPtCut, trailingPtCut = 20.0, 10.0, 5.0
+leadingPtCut, subleadingPtCut, trailingPtCut = 12.0, 10.0, 5.0
 iso_cut = 0.1
 sip_cut = 4
 dxy_cut = 0.05
@@ -137,7 +139,9 @@ for ev in tqdm(range(len(data["nMuon"]))):
 
 	if len(GoodMu) < 3: 
 		selection[ev] = False
-		cause[max(set(cutBy), key = cutBy.count)]+=1
+		#cause[max(set(cutBy), key = cutBy.count)]+=1
+		for i in cutBy:
+			cause[i]+=1
 		num4+=1
 	if not selection[ev]: continue
 
@@ -182,7 +186,9 @@ for ev in tqdm(range(len(data["nMuon"]))):
 
 	if not foundZp:
 		selection[ev] = False
-		cause2[max(set(cutBy2), key = cutBy2.count)]+=1
+		#cause2[max(set(cutBy2), key = cutBy2.count)]+=1
+		for i in cutBy2:
+			cause2[i]+=1
 	if not selection[ev]: continue
 
 	lep1 = TLorentzVector()
@@ -241,10 +247,10 @@ left3 = left2-num3
 eff3 = left3/left2*100
 left4 = left3-num4
 eff4 = left4/left3*100
-causePer = cause/num4*100
+causePer = ((cause/np.sum(cause)))*100
 num5 = left4-left5
 eff5 = left5/left4*100
-causePer2 = cause2/num5*100
+causePer2 = ((cause2/np.sum(cause2)))*100
 
 print("Efficiencies for each cut")
 print("=====================================================")
@@ -260,18 +266,21 @@ print("Total Efficiency = %.2f%%"%(left5/left1*100))
 print("Wrote to file %s"%(out_file))
 print("")
 
-print("Bad Muons cut because of: medId %.2f%%, sip %.2f%%, dxy %.2f%%, dz %.2f%%, iso %.2f%%"%(causePer[0],causePer[1],causePer[2],causePer[3],causePer[4]))
+print("Percent that fail good muon cuts: medId %.2f%%, sip %.2f%%, dxy %.2f%%, dz %.2f%%, iso %.2f%%"%(causePer[0],causePer[1],causePer[2],causePer[3],causePer[4]))
 print("Didn't find Z' because of: mu signs %.2f%%, leading pT %.2f%%, subleading pT %.2f%%, trailing pT %.2f%%, m3l %.2f%%"%(causePer2[0],causePer2[1],causePer2[2],causePer2[3],causePer2[4]))
 print("")
 
 f1 = open("Tables/cut_list.txt","a")
 f2 = open("Tables/GoodMu_list.txt","a")
 f3 = open("Tables/ZpCandidate_list.txt","a")
+f4 = open("Tables/counts_list.txt","a")
 
 f1.write("%s,%.2f%%,%.2f%%,%.2f%%,%.2f%%,%.2f%%\n"%(dataset,eff2,eff3,eff4,eff5,left5/left1*100))
-f2.write("%s,%.2f%%,%.2f%%,%.2f%%,%.2f%%,%.2f%%\n"%(dataset,causePer[0],causePer[1],causePer[2],causePer[3],causePer[4]))
-f3.write("%s,%.2f%%,%.2f%%,%.2f%%,%.2f%%,%.2f%%\n"%(dataset,causePer2[0],causePer2[1],causePer2[2],causePer2[3],causePer2[4]))
+f2.write("%s,%.2f%%,%.2f%%,%.2f%%,%.2f%%,%.2f%%,%.2f%%\n"%(dataset,100-eff4,causePer[0],causePer[1],causePer[2],causePer[3],causePer[4]))
+f3.write("%s,%.2f%%,%.2f%%,%.2f%%,%.2f%%,%.2f%%,%.2f%%\n"%(dataset,100-eff5,causePer2[0],causePer2[1],causePer2[2],causePer2[3],causePer2[4]))
+f4.write("%s,%i,%i,%i,%i,%i,%i,%i,%i,%i,%i,%i,%i,%i,%i,%i,%i\n"%(dataset,sumW,left1,left2,left3,left4,left5,cause[0],cause[1],cause[2],cause[3],cause[4],cause2[0],cause2[1],cause2[2],cause2[3],cause2[4]))
 
 f1.close()
 f2.close()
 f3.close()
+f4.close()
