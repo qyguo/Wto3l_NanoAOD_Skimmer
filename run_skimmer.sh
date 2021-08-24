@@ -8,6 +8,7 @@ bkg_list=()
 data_list=()
 sig_list=()
 
+bkg_list+=( "DYJetsToLL_M1To10" )
 bkg_list+=( "DYJetsToLL_M10To50" )
 bkg_list+=( "DYJetsToLL_M50" )
 bkg_list+=( "TTJets_DiLept" )

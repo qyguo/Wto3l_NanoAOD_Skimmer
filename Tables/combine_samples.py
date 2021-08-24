@@ -9,7 +9,8 @@ elif str(sys.argv[1]) == "data":
 else:
 	comb_str = "Combined Signal"
 
-xs = {	"DYJetsToLL_M10To50":18610.0,
+xs = {	"DYJetsToLL_M1To10":  2037.0,
+		"DYJetsToLL_M10To50":18610.0,
 		"DYJetsToLL_M50":    6077.22,
 		"WJetsToLNu":        61526.7,
 		"TTJets_DiLept":       54.23,

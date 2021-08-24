@@ -47,17 +47,17 @@ else:
 
 #Define cuts
 cut0, cut1, cut2, cut3, cut4 = 0, 0, 0, 0, 0
-leadingPtCut, subleadingPtCut, trailingPtCut = 12.0, 10.0, 5.0
+leadingPtCut, subleadingPtCut, trailingPtCut = 10.0, 5.0, 5.0
 iso_cut = 0.1
 sip_cut = 4
 dxy_cut = 0.05
 dz_cut = 0.1
-Wmass = 80.0
+Wmass = 83.0
 
 #Import tree from ROOT
 vars_in = ["run","event","luminosityBlock","nMuon","Muon_pt","Muon_pdgId","Muon_eta","Muon_phi","Muon_mass","Muon_pfRelIso03_all","Muon_tightId","Muon_mediumId","Muon_ip3d","Muon_sip3d","Muon_dxy","Muon_dz","nJet","Jet_pt","Jet_btagCSVV2","MET_pt","MET_phi","HLT_Mu17_TrkIsoVVL_Mu8_TrkIsoVVL_DZ_Mass8","HLT_Mu17_TrkIsoVVL_Mu8_TrkIsoVVL_DZ","HLT_TripleMu_10_5_5_DZ","HLT_Mu17_TrkIsoVVL_Mu8_TrkIsoVVL","HLT_TripleMu_12_10_5"]
 if isMC:
-	vars_in.append("genWeight")
+	vars_in.extend(["genWeight","Pileup_nPU"])
 if isSignal:
 	vars_in.extend(["GenPart_pdgId","GenPart_eta","GenPart_pt"])
 
