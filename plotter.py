@@ -20,13 +20,15 @@ for m in range(len(masses)):
 	gen_id = events["GenPart_pdgId"].array()
 	gen_eta = events["GenPart_eta"].array()
 	gen_pt = events["GenPart_pt"].array()
+	gen_phi = events["GenPart_phi"].array()
+	gen_mass = events["GenPart_mass"].array()
 	
 	leading    = np.array([]) #np.zeros(len(gen_id))
 	subleading = np.array([]) #np.zeros(len(gen_id))
 	trailing   = np.array([]) #np.zeros(len(gen_id))
 	npassl, npasss, npasst, npass, inDet = 0,0,0,0,0
 	for ev in tqdm(range(len(gen_id))):
-		gen = np.unique(np.array([gen_id[ev],gen_eta[ev],gen_pt[ev]]), axis=1)
+		gen = np.unique(np.array([gen_id[ev],gen_eta[ev],gen_pt[ev],gen_phi[ev],gen_mass[ev]]), axis=1)
 		pts = np.array([])
 		for i in range(len(gen[0])):
 			if np.abs(gen[0][i])==13.0 and np.abs(gen[1][i])<2.4:

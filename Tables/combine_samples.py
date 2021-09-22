@@ -36,6 +36,7 @@ counts = {}
 final_counts = np.array([0,0,0,0,0])
 final_cause1 = np.array([0,0,0,0,0])
 final_cause2 = np.array([0,0,0,0,0])
+final_trig   = np.array([0,0,0])
 
 with open("Tables/counts_list.txt","r") as f:
 	for line in f:
@@ -56,21 +57,28 @@ with open("Tables/counts_list.txt","r") as f:
 		cause2 = cause2*xs[str(current[0])]/sumW[str(current[0])]
 		final_cause2 = final_cause2+cause2
 
+		trig = np.array([int(current[17]),int(current[18]),int(current[19])])
+		trig = trig*xs[str(current[0])]/sumW[str(current[0])]
+		final_trig = final_trig+trig
+
 final_eff = np.array([0.,0.,0.,0.,0.])
 final_causePer1 = np.array([0.,0.,0.,0.,0.])
 final_causePer2 = np.array([0.,0.,0.,0.,0.])
+final_trigPer   = np.array([0.,0.,0.])
 for i in range(len(final_eff)-1):
 	final_eff[i] = final_counts[i+1]/final_counts[i]*100
 	#final_causePer1[i] = (final_cause1[i]/(final_counts[2]-final_counts[3]))*100
 	#final_causePer2[i] = (final_cause2[i]/(final_counts[3]-final_counts[4]))*100
 	final_causePer1[i] = (final_cause1[i]/np.sum(final_cause1))*100
 	final_causePer2[i] = (final_cause2[i]/np.sum(final_cause2))*100
+	if i < len(final_trigPer):
+		final_trigPer[i] = final_trig[i]/final_counts[0]*100
 final_eff[-1] = final_counts[-1]/final_counts[0]*100
 #final_causePer1[-1] = (final_cause1[-1]/(final_counts[2]-final_counts[3]))*100
 #final_causePer2[-1] = (final_cause2[-1]/(final_counts[3]-final_counts[4]))*100
 final_causePer1[-1] = (final_cause1[-1]/np.sum(final_cause1))*100
 final_causePer2[-1] = (final_cause2[-1]/np.sum(final_cause2))*100
-
+final_trigPer[-1] = final_trig[-1]/final_counts[0]*100
 
 f1 = open("Tables/cut_list.txt","a")
 f1.write("%s,%.2f%%,%.2f%%,%.2f%%,%.2f%%,%.2f%%\n"%(comb_str,final_eff[0],final_eff[1],final_eff[2],final_eff[3],final_eff[4]))
@@ -83,3 +91,7 @@ f2.close()
 f3 = open("Tables/ZpCandidate_list.txt","a")
 f3.write("%s,%.2f%%,%.2f%%,%.2f%%,%.2f%%,%.2f%%,%.2f%%\n"%(comb_str,100-final_eff[3],final_causePer2[0],final_causePer2[1],final_causePer2[2],final_causePer2[3],final_causePer2[4]))
 f3.close()
+
+f4 = open("Tables/Trigger_list.txt","a")
+f4.write("%s,%.2f%%,%.2f%%,%.2f%%,%.2f%%\n"%(comb_str,final_eff[0],final_trigPer[0],final_trigPer[1],final_trigPer[2]))
+f4.close()

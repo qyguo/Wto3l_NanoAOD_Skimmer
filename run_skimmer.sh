@@ -3,6 +3,7 @@
 echo -e "Sample,Passed Trigger,Had No b Jets,Found 3 Good Muons,Found Z' Candidate,Overall Efficiency" > Tables/cut_list.txt
 echo -e "Sample,Failed 3 Good Muon,Medium Id,Sip3d,dxy,dz,Isolation" > Tables/GoodMu_list.txt
 echo -e "Sample,Failed Z' Candidate,Muon Signs,Leading pT,Subleading pT,Trailing pT,3 Muon Invariant Mass" > Tables/ZpCandidate_list.txt
+echo -e "Sample,Passed Trigger,Passed 2mu+DZ+Mass,Passed 3mu_12,Passed 3mu_10" > Tables/Trigger_list.txt
 
 bkg_list=()
 data_list=()

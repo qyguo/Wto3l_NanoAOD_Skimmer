@@ -5,6 +5,8 @@ with open("Tables/GoodMu_list.txt") as fp:
 	mutable = from_csv(fp)
 with open("Tables/ZpCandidate_list.txt") as fp:
 	zptable = from_csv(fp)
+with open("Tables/Trigger_list.txt") as fp:
+	trigtable = from_csv(fp)
 
 print("Efficiencies of Cuts")
 print(cuttable)
@@ -14,4 +16,7 @@ print(mutable)
 print("")
 print("No Z' Candidate because of:")
 print(zptable)
+print("")
+print("Individual Trigger Efficiencies")
+print(trigtable)
 
