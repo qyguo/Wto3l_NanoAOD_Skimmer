@@ -19,16 +19,15 @@ in_file = ""
 out_file = ""
 if isSignal==1:
 	in_file = "/cmsuf/data/store/user/t2/users/nikmenendez/signal/NanoAOD/"+dataset+".root"
-	out_file = "/cmsuf/data/store/user/t2/users/nikmenendez/skimmed/NanoAOD/2017/signal/ZpX/Eff/"+dataset+".root"
-	sumW_file = "/cmsuf/data/store/user/t2/users/nikmenendez/skimmed/NanoAOD/2017/signal/ZpX/Eff/"+dataset+".txt"
+	out_file = "/cmsuf/data/store/user/t2/users/nikmenendez/skimmed/NanoAOD/2017/signal/Zpeak/Eff/"+dataset+".root"
+	sumW_file = "/cmsuf/data/store/user/t2/users/nikmenendez/skimmed/NanoAOD/2017/signal/Zpeak/Eff/"+dataset+".txt"
 elif isMC==1:
 	in_file = "/cmsuf/data/store/user/t2/users/nikmenendez/2017_MC_bkg/ZpX/"+dataset+".root"
-	#in_file = "root://cmseos.hpg2.rc.ufl.edu://store/user/t2/users/nikmenendez/2017_MC_bkg/ZpX/"+dataset+".root"
-	out_file = "/cmsuf/data/store/user/t2/users/nikmenendez/skimmed/NanoAOD/2017/background/ZpX/Eff/"+dataset+".root"
-	sumW_file = "/cmsuf/data/store/user/t2/users/nikmenendez/skimmed/NanoAOD/2017/background/ZpX/Eff/"+dataset+".txt"
+	out_file = "/cmsuf/data/store/user/t2/users/nikmenendez/skimmed/NanoAOD/2017/background/Zpeak/Eff/"+dataset+".root"
+	sumW_file = "/cmsuf/data/store/user/t2/users/nikmenendez/skimmed/NanoAOD/2017/background/Zpeak/Eff/"+dataset+".txt"
 else:
 	in_file = "/cmsuf/data/store/user/t2/users/nikmenendez/data_wto3l/2017/ZpX/"+dataset+".root"
-	out_file = "/cmsuf/data/store/user/t2/users/nikmenendez/skimmed/NanoAOD/2017/data/ZpX/Eff/"+dataset+".root"
+	out_file = "/cmsuf/data/store/user/t2/users/nikmenendez/skimmed/NanoAOD/2017/data/Zpeak/Eff/"+dataset+".root"
 
 print("Skimming file %s"%(in_file))
 
@@ -56,10 +55,8 @@ dz_cut = 0.1
 Wmass = 83.0
 
 #Import tree from ROOT
-#triggers = ["HLT_Mu17_TrkIsoVVL_Mu8_TrkIsoVVL","HLT_Mu17_TrkIsoVVL_Mu8_TrkIsoVVL_DZ","HLT_Mu17_TrkIsoVVL_Mu8_TrkIsoVVL_DZ_Mass8","HLT_TripleMu_12_10_5","HLT_TripleMu_10_5_5_DZ"]
 vars_in = ["run","event","luminosityBlock","nMuon","Muon_pt","Muon_pdgId","Muon_eta","Muon_phi","Muon_mass","Muon_pfRelIso03_all","Muon_tightId","Muon_mediumId","Muon_ip3d","Muon_sip3d","Muon_dxy","Muon_dz","nJet","Jet_pt","Jet_btagCSVV2","MET_pt","MET_phi","nElectron","Electron_pdgId","Electron_phi","Electron_eta","Electron_mass","Electron_pt","Electron_cutBased","Electron_pfRelIso03_all","Electron_ip3d","Electron_sip3d","Electron_dxy","Electron_dz"]
-#triggers = ["HLT_Mu8_DiEle12_CaloIdL_TrackIdL","HLT_Ele23_Ele12_CaloIdL_TrackIdL_IsoVL_DZ","HLT_Mu8_TrkIsoVVL_Ele23_CaloIdL_TrackIdL_IsoVL_DZ","HLT_Mu23_TrkIsoVVL_Ele8_CaloIdL_TrackIdL_IsoVL_DZ","HLT_Mu23_TrkIsoVVL_Ele12_CaloIdL_TrackIdL_IsoVL_DZ","HLT_Mu8_TrkIsoVVL_Ele23_CaloIdL_TrackIdL_IsoVL","HLT_Mu23_TrkIsoVVL_Ele8_CaloIdL_TrackIdL_IsoVL"]
-triggers = ["HLT_Mu8_DiEle12_CaloIdL_TrackIdL","HLT_Ele23_Ele12_CaloIdL_TrackIdL_IsoVL_DZ","HLT_Mu8_TrkIsoVVL_Ele23_CaloIdL_TrackIdL_IsoVL_DZ","HLT_Mu23_TrkIsoVVL_Ele12_CaloIdL_TrackIdL_IsoVL_DZ"]
+triggers = ["HLT_Ele23_Ele12_CaloIdL_TrackIdL_IsoVL_DZ"]
 vars_in.extend(triggers)
 if isMC:
 	vars_in.extend(["genWeight","Pileup_nTrueInt","Muon_genPartFlav","Electron_genPartFlav"])
@@ -83,14 +80,14 @@ cause = np.array([0,0,0,0,0,0])
 cause2= np.array([0,0,0,0,0,0])
 
 for data in tqdm(events.iterate(vars_in)):
-	nEntries = len(data["nMuon"])
+	nEntries = len(data["nElectron"])
 	
 	#Find acceptance of signal
 	left0 += nEntries
-	selection = data["nMuon"] >= 0
+	selection = data["nElectron"] >= 0
 	selection *= data["nElectron"] >= 2
 	left1 += np.count_nonzero(selection)
-	selection *= data["nMuon"] >= 1
+	#selection *= data["nMuon"] >= 1
 	left2 += np.count_nonzero(selection)
 	
 	# Calculate trigger efficiencies
@@ -100,17 +97,17 @@ for data in tqdm(events.iterate(vars_in)):
 	selection *= passedTrigger
 	left3 += np.count_nonzero(selection)
 	
-	for ev in tqdm(range(len(data["nMuon"])),leave=False):
+	for ev in tqdm(range(nEntries),leave=False):
 		if not selection[ev]: continue
 	
 		nbjets = 0
 		for i in range(data["nJet"][ev]):
 			if data["Jet_pt"][ev][i] > 25 and data["Jet_btagCSVV2"][ev][i] > .46:
 				nbjets+=1
-		if nbjets > 0:
-			selection[ev] = False
-			num3+=1
-		if not selection[ev]: continue
+		#if nbjets > 0:
+		#	selection[ev] = False
+		#num3+=1
+		#if not selection[ev]: continue
 	
 	
 		nGood = 0
@@ -141,13 +138,13 @@ for data in tqdm(events.iterate(vars_in)):
 		for i in range(data["nMuon"][ev]):
 			passes=True
 			if data["Muon_pt"][ev][i]<5:
-				cutBy.append(5)
 				passes=False
 			if not passes: continue
 	
 			GoodM.append(i)
+		nGoodM = len(GoodM)
 	
-		if len(GoodE) < 2 or len(GoodM) < 1: 
+		if len(GoodE) < 2: 
 			selection[ev] = False
 			for i in cutBy:
 				cause[i]+=1
@@ -167,7 +164,8 @@ for data in tqdm(events.iterate(vars_in)):
 	
 				i1 = GoodE[m1]
 				i2 = GoodE[m2]
-				i3 = GoodM[0]
+				if nGoodM>0:
+					i3 = GoodM[0]
 	
 				foundZp = True
 	
@@ -179,37 +177,33 @@ for data in tqdm(events.iterate(vars_in)):
 	
 		lep1 = TLorentzVector()
 		lep2 = TLorentzVector()
-		lep3 = TLorentzVector()
 		lep1.SetPtEtaPhiM(data["Electron_pt"][ev][i1],data["Electron_eta"][ev][i1],data["Electron_phi"][ev][i1],data["Electron_mass"][ev][i1])
 		lep2.SetPtEtaPhiM(data["Electron_pt"][ev][i2],data["Electron_eta"][ev][i2],data["Electron_phi"][ev][i2],data["Electron_mass"][ev][i2])
-		lep3.SetPtEtaPhiM(data["Muon_pt"][ev][i3],data["Muon_eta"][ev][i3],data["Muon_phi"][ev][i3],data["Muon_mass"][ev][i3])
 	
-		threeleps = lep1+lep2+lep3
+		twoleps = lep1+lep2
 		Met = TLorentzVector()
 		Met.SetPtEtaPhiM(data["MET_pt"][ev],0,data["MET_phi"][ev],0)
 	
-		output["idL1"], output["idL2"], output["idL3"] = np.append(output["idL1"],data["Electron_pdgId"][ev][i1]), np.append(output["idL2"],data["Electron_pdgId"][ev][i2]), np.append(output["idL3"],data["Muon_pdgId"][ev][i3])
-		output["pTL1"], output["pTL2"], output["pTL3"] = np.append(output["pTL1"],data["Electron_pt"][ev][i1]), np.append(output["pTL2"],data["Electron_pt"][ev][i2]), np.append(output["pTL3"],data["Muon_pt"][ev][i3])
-		output["etaL1"], output["etaL2"], output["etaL3"] = np.append(output["etaL1"],data["Electron_eta"][ev][i1]), np.append(output["etaL2"],data["Electron_eta"][ev][i2]), np.append(output["etaL3"],data["Muon_eta"][ev][i3])
-		output["phiL1"], output["phiL2"], output["phiL3"] = np.append(output["phiL1"],data["Electron_phi"][ev][i1]), np.append(output["phiL2"],data["Electron_phi"][ev][i2]), np.append(output["phiL3"],data["Muon_phi"][ev][i3])
-		output["IsoL1"], output["IsoL2"], output["IsoL3"] = np.append(output["IsoL1"],data["Electron_pfRelIso03_all"][ev][i1]), np.append(output["IsoL2"],data["Electron_pfRelIso03_all"][ev][i2]), np.append(output["IsoL3"],data["Muon_pfRelIso03_all"][ev][i3])
-		output["ip3dL1"], output["ip3dL2"], output["ip3dL3"] = np.append(output["ip3dL1"],data["Electron_ip3d"][ev][i1]), np.append(output["ip3dL2"],data["Electron_ip3d"][ev][i2]), np.append(output["ip3dL3"],data["Muon_ip3d"][ev][i3])
-		output["sip3dL1"], output["sip3dL2"], output["sip3dL3"] = np.append(output["sip3dL1"],data["Electron_sip3d"][ev][i1]), np.append(output["sip3dL2"],data["Electron_sip3d"][ev][i2]), np.append(output["sip3dL3"],data["Muon_sip3d"][ev][i3])
-		output["massL1"], output["massL2"], output["massL3"] = np.append(output["massL1"],data["Electron_mass"][ev][i1]), np.append(output["massL2"],data["Electron_mass"][ev][i2]), np.append(output["massL3"],data["Muon_mass"][ev][i3])
-		output["tightIdL1"], output["tightIdL2"], output["tightIdL3"] = np.append(output["tightIdL1"],True), np.append(output["tightIdL2"],True), np.append(output["tightIdL3"],data["Muon_tightId"][ev][i3])
-		output["medIdL1"], output["medIdL2"], output["medIdL3"] = np.append(output["medIdL1"],True), np.append(output["medIdL2"],True), np.append(output["medIdL3"],data["Muon_mediumId"][ev][i3])
+		output["idL1"], output["idL2"] = np.append(output["idL1"],data["Electron_pdgId"][ev][i1]), np.append(output["idL2"],data["Electron_pdgId"][ev][i2])
+		output["pTL1"], output["pTL2"] = np.append(output["pTL1"],data["Electron_pt"][ev][i1]), np.append(output["pTL2"],data["Electron_pt"][ev][i2])
+		output["etaL1"], output["etaL2"] = np.append(output["etaL1"],data["Electron_eta"][ev][i1]), np.append(output["etaL2"],data["Electron_eta"][ev][i2])
+		output["phiL1"], output["phiL2"] = np.append(output["phiL1"],data["Electron_phi"][ev][i1]), np.append(output["phiL2"],data["Electron_phi"][ev][i2])
+		output["IsoL1"], output["IsoL2"] = np.append(output["IsoL1"],data["Electron_pfRelIso03_all"][ev][i1]), np.append(output["IsoL2"],data["Electron_pfRelIso03_all"][ev][i2])
+		output["ip3dL1"], output["ip3dL2"] = np.append(output["ip3dL1"],data["Electron_ip3d"][ev][i1]), np.append(output["ip3dL2"],data["Electron_ip3d"][ev][i2])
+		output["sip3dL1"], output["sip3dL2"] = np.append(output["sip3dL1"],data["Electron_sip3d"][ev][i1]), np.append(output["sip3dL2"],data["Electron_sip3d"][ev][i2])
+		output["massL1"], output["massL2"] = np.append(output["massL1"],data["Electron_mass"][ev][i1]), np.append(output["massL2"],data["Electron_mass"][ev][i2])
+		output["tightIdL1"], output["tightIdL2"] = np.append(output["tightIdL1"],True), np.append(output["tightIdL2"],True)
+		output["medIdL1"], output["medIdL2"] = np.append(output["medIdL1"],True), np.append(output["medIdL2"],True)
 	
-		output["maxdxy"] = np.append(output["maxdxy"], np.amax(np.absolute([data["Electron_dxy"][ev][i1],data["Electron_dxy"][ev][i2],data["Muon_dxy"][ev][i3]])))
-		output["maxdz"] =  np.append(output["maxdz"], np.amax(np.absolute([data["Electron_dz"][ev][i1],data["Electron_dz"][ev][i2],data["Muon_dz"][ev][i3]])))
+		output["maxdxy"] = np.append(output["maxdxy"], np.amax(np.absolute([data["Electron_dxy"][ev][i1],data["Electron_dxy"][ev][i2]])))
+		output["maxdz"] =  np.append(output["maxdz"], np.amax(np.absolute([data["Electron_dz"][ev][i1],data["Electron_dz"][ev][i2]])))
 	
 		output["dR12"] = np.append(output["dR12"], deltaR(lep1.Eta(),lep1.Phi(),lep2.Eta(),lep2.Phi()))
-		output["dR13"] = np.append(output["dR13"], deltaR(lep1.Eta(),lep1.Phi(),lep3.Eta(),lep3.Phi()))
-		output["dR23"] = np.append(output["dR23"], deltaR(lep2.Eta(),lep2.Phi(),lep3.Eta(),lep3.Phi()))
 		output["met"], output["met_phi"] = np.append(output["met"],data["MET_pt"][ev]), np.append(output["met_phi"],data["MET_phi"][ev])
 	
 		output["nMuons"], output["nGoodMuons"] = np.append(output["nMuons"],data["nMuon"][ev]), np.append(output["nGoodMuons"],len(GoodM))
 		output["nbJets"] = np.append(output["nbJets"],nbjets)
-		output["m3l"], output["mt"] = np.append(output["m3l"],threeleps.M()), np.append(output["mt"],(threeleps+Met).Mt())
+		output["mt"] = np.append(output["mt"],(twoleps+Met).Mt())
 	
 		output["Run"] = np.append(output["Run"],data["run"][ev])
 		output["Event"] = np.append(output["Event"],data["event"][ev])
@@ -218,12 +212,52 @@ for data in tqdm(events.iterate(vars_in)):
 		if isMC==1: 
 			output["genWeight"] = np.append(output["genWeight"],data["genWeight"][ev])
 			output["pileupWeight"] = np.append(output["pileupWeight"],data["Pileup_nTrueInt"][ev])
-			output["sourceL1"], output["sourceL2"], output["sourceL3"] = np.append(output["sourceL1"],data["Electron_genPartFlav"][ev][i1]), np.append(output["sourceL2"],data["Electron_genPartFlav"][ev][i2]), np.append(output["sourceL3"],data["Muon_genPartFlav"][ev][i3])
+			output["sourceL1"], output["sourceL2"] = np.append(output["sourceL1"],data["Electron_genPartFlav"][ev][i1]), np.append(output["sourceL2"],data["Electron_genPartFlav"][ev][i2])
 		else: 
 			output["genWeight"] = np.append(output["genWeight"],1)
 			output["pileupWeight"] = np.append(output["pileupWeight"],1)
-			output["sourceL1"], output["sourceL2"], output["sourceL3"] = np.append(output["sourceL1"],0), np.append(output["sourceL2"],0), np.append(output["sourceL3"],0)
-	
+			output["sourceL1"], output["sourceL2"] = np.append(output["sourceL1"],0), np.append(output["sourceL2"],0)
+
+		if nGoodM>0:
+			lep3 = TLorentzVector()
+			lep3.SetPtEtaPhiM(data["Muon_pt"][ev][i3],data["Muon_eta"][ev][i3],data["Muon_phi"][ev][i3],data["Muon_mass"][ev][i3])
+			threeleps = lep1+lep2+lep3
+			output["m3l"] = np.append(output["m3l"],threeleps.M())
+			output["idL3"] = np.append(output["idL3"],data["Muon_pdgId"][ev][i3])
+			output["pTL3"] = np.append(output["pTL3"],data["Muon_pt"][ev][i3])
+			output["etaL3"] = np.append(output["etaL3"],data["Muon_eta"][ev][i3])
+			output["phiL3"] = np.append(output["phiL3"],data["Muon_phi"][ev][i3])
+			output["IsoL3"] = np.append(output["IsoL3"],data["Muon_pfRelIso03_all"][ev][i3])
+			output["ip3dL3"] = np.append(output["ip3dL3"],data["Muon_ip3d"][ev][i3])
+			output["sip3dL3"] = np.append(output["sip3dL3"],data["Muon_sip3d"][ev][i3])
+			output["massL3"] = np.append(output["massL3"],data["Muon_mass"][ev][i3])
+			output["tightIdL3"] = np.append(output["tightIdL3"],data["Muon_tightId"][ev][i3])
+			output["medIdL3"] = np.append(output["medIdL3"],data["Muon_mediumId"][ev][i3])
+			output["dR13"] = np.append(output["dR13"], deltaR(lep1.Eta(),lep1.Phi(),lep3.Eta(),lep3.Phi()))
+			output["dR23"] = np.append(output["dR23"], deltaR(lep2.Eta(),lep2.Phi(),lep3.Eta(),lep3.Phi()))
+			if isMC==1:
+				output["sourceL3"] = np.append(output["sourceL3"],data["Muon_genPartFlav"][ev][i3])
+			else:
+				output["sourceL3"] = np.append(output["sourceL3"],0)
+		else:
+			output["m3l"] = np.append(output["m3l"],-99)
+			output["idL3"] = np.append(output["idL3"],-99)
+			output["pTL3"] = np.append(output["pTL3"],-99)
+			output["etaL3"] = np.append(output["etaL3"],-99)
+			output["phiL3"] = np.append(output["phiL3"],-99)
+			output["IsoL3"] = np.append(output["IsoL3"],-99)
+			output["ip3dL3"] = np.append(output["ip3dL3"],-99)
+			output["sip3dL3"] = np.append(output["sip3dL3"],-99)
+			output["massL3"] = np.append(output["massL3"],-99)
+			output["tightIdL3"] = np.append(output["tightIdL3"],-99)
+			output["medIdL3"] = np.append(output["medIdL3"],-99)
+			output["dR13"] = np.append(output["dR13"],-99)
+			output["dR23"] = np.append(output["dR23"],-99)
+			if isMC==1:
+				output["sourceL3"] = np.append(output["sourceL3"],-99)
+			else:
+				output["sourceL3"] = np.append(output["sourceL3"],-99)
+			
 		output["passedDiMu1"] = np.append(output["passedDiMu1"],1)
 		output["passedDiMu2"] = np.append(output["passedDiMu2"],1)
 		output["passedTriMu"] = np.append(output["passedTriMu"],1)
@@ -252,24 +286,24 @@ print("Efficiencies for each cut")
 print("=====================================================")
 print("Total events before cuts: %i"%(left0))
 print("Pass 2e cut: %i. Efficiency = %.2f%%"%(left1,eff1))
-print("Pass 1mu cut: %i. Efficiency = %.2f%%"%(left2,eff2))
+#print("Pass 1mu cut: %i. Efficiency = %.2f%%"%(left2,eff2))
 print("Pass Trigger: %i. Efficiency = %.2f%%"%(left3,eff3))
-print("Event has no b jets: %i. Efficiency = %.2f%%"%(left4,eff4))
-print("Found good 2e+1mu: %i. Efficiency = %.2f%%"%(left5,eff5))
+#print("Event has no b jets: %i. Efficiency = %.2f%%"%(left4,eff4))
+print("Found good 2e: %i. Efficiency = %.2f%%"%(left5,eff5))
 print("Found Z' candidate: %i. Efficiency = %.2f%%"%(left6,eff6))
 print("=====================================================")
 print("Total Efficiency = %.2f%%"%(left6/left0*100))
 print("Wrote to file %s"%(out_file))
 
-print("Percent that fail good 2e+1mu cut: tightId %.2f%%, e pt %.2f%%, e Iso %.2f%%, e SIP %.2f%%, e dxyz %.2f%%, mu pt %.2f%%"%(causePer[0],causePer[1],causePer[2],causePer[3],causePer[4],causePer[5]))
+print("Percent that fail good 2e cut: tightId %.2f%%, e pt %.2f%%, e Iso %.2f%%, e SIP %.2f%%, e dxyz %.2f%%"%(causePer[0],causePer[1],causePer[2],causePer[3],causePer[4]))
 print("Didn't find Z' because of: e signs %.2f%%"%(causePer2[0]))
 print("")
 
 f1 = open("Tables/cut_list.txt","a")
 f2 = open("Tables/GoodMu_list.txt","a")
 
-f1.write("%s,%.2f%%,%.2f%%,%.2f%%,%.2f%%,%.2f%%,%.2f%%,%.2f%%\n"%(dataset,eff1,eff2,eff3,eff4,eff5,eff6,left6/left0*100))
-f2.write("%s,%.2f%%,%.2f%%,%.2f%%,%.2f%%,%.2f%%,%.2f%%,%.2f%%\n"%(dataset,100-eff5,causePer[0],causePer[1],causePer[2],causePer[3],causePer[4],causePer[5]))
+f1.write("%s,%.2f%%,%.2f%%,%.2f%%,%.2f%%\n"%(dataset,eff1,eff5,eff6,left6/left0*100))
+f2.write("%s,%.2f%%,%.2f%%,%.2f%%,%.2f%%,%.2f%%,%.2f%%\n"%(dataset,100-eff5,causePer[0],causePer[1],causePer[2],causePer[3],causePer[4]))
 
 f1.close()
 f2.close()
