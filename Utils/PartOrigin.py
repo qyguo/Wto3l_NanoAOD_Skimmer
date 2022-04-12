@@ -3,6 +3,7 @@ def PartOrigin(PdgId,MomId,MomMomId,lep_id):
 	# Origin -1=other, 0=prompt, 1=bdfake, 2=fake, 3=nonpromptelecton, 4=promptformphot, 5=nonpromptconv
 	origin = -1
 
+	# Non prompt conversion: lep -> gamma -> mu
 	test_origin_1 = ( PdgId==22 and (abs(MomId)==11 or abs(MomId)==13 or abs(MomId)==15) )
 	test_origin_2 = ( MomId==22 and (abs(MomMomId)==11 or abs(MomMomId)==13 or abs(MomMomId)==15) ) and (PdgId==lep_id)
 
@@ -12,12 +13,14 @@ def PartOrigin(PdgId,MomId,MomMomId,lep_id):
 		origin = 2
 
 	else:
+		# Prompt from photon: not lep -> gamma
 		test_origin = ( PdgId==22 and not (abs(MomId)==11 or abs(MomId)==13 or abs(MomId)==15) )
 
 		if test_origin>=1:
 			origin = 1
 
 		else:
+			# Prompt
 			test_origin_1 = ( PdgId==23 )
 			test_origin_2 = ( ( (MomId==23) or (abs(MomId)==24) or (MomId==25) ) and (PdgId==lep_id) )
 			test_origin_3 = ( ( (MomMomId==23) or (abs(MomMomId)==24) or (MomMomId==25) ) and ((PdgId==lep_id) and (MomId==lep_id)))
@@ -29,6 +32,7 @@ def PartOrigin(PdgId,MomId,MomMomId,lep_id):
 				origin = 0
 
 			else:
+				# Fake from b or d hadrons
 				test_origin_1 = ((abs(PdgId)>410)and(abs(PdgId)<436))or((abs(PdgId)>10410)and(abs(PdgId)<10433)) or ((abs(PdgId)>20412)and(abs(PdgId)<20434))
 				test_origin_2 = ((abs(PdgId)>510)and(abs(PdgId)<546))or((abs(PdgId)>10510)and(abs(PdgId)<10544)) or ((abs(PdgId)>20512)and(abs(PdgId)<20544))
 				test_origin_3 = ((abs(MomId)>410)and(abs(MomId)<436))or((abs(MomId)>10410)and(abs(MomId)<10433)) or ((abs(MomId)>20412)and(abs(MomId)<20434))
@@ -42,6 +46,7 @@ def PartOrigin(PdgId,MomId,MomMomId,lep_id):
 					origin = 3
 
 				else:
+					# Fake from other hadrons
 					test_origin_1 = ((abs(PdgId)<10)or(abs(PdgId)>100))
 					test_origin_2 = ((abs(MomId)<10)or(abs(MomId)>100))
 					test_origin_3 = ((abs(MomMomId)<10)or(abs(MomMomId)>100))
@@ -52,24 +57,28 @@ def PartOrigin(PdgId,MomId,MomMomId,lep_id):
 						origin = 4
 
 					else:
+						# Is an electron or from an electron
 						test_origin = (abs(PdgId)==11) or abs(MomId)==11 or abs(MomMomId)==11
 
 						if test_origin>=1:
 							origin = 5
 
 						else:
+							# Is a tau of from a tau
 							test_origin = (abs(PdgId)==15) or abs(MomId)==15 or abs(MomMomId)==15
 
 							if test_origin>=1:
 								origin = 6
 
 							else:
+								# Non prompt gluon: neutrino -> gluon -> mu
 								test_origin = MomId==21 and (abs(MomMomId)==12 or abs(MomMomId)==14 or abs(MomMomId)==16)
 
 								if test_origin>=1:
 									origin = 7
 
 								else:
+									# Mistagged gluon: muon tagged as gluon
 									test_origin = PdgId==21
 
 									if test_origin>=1:
