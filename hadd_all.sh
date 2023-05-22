@@ -6,11 +6,11 @@
 #hadd -fk /cmsuf/data/store/user/t2/users/nikmenendez/2017_MC_bkg/NanoAOD/WJetsToLNu.root /cmsuf/data/store/user/nimenend/NanoAOD/WJetsToLNu_*/*/2108*/0000/*.root
 #hadd -fk /cmsuf/data/store/user/t2/users/nikmenendez/2017_MC_bkg/NanoAOD/WWTo2L2Nu.root /cmsuf/data/store/user/nimenend/NanoAOD/WWTo2L2Nu_*/*/2108*/0000/*.root
 #
-hadd -fk /cmsuf/data/store/user/t2/users/nikmenendez/data_wto3l/2017/DoubleMuon_B.root /cmsuf/data/store/user/nimenend/NanoAOD/Data/DoubleMuon/*B/2109*/*/*.root
-hadd -fk /cmsuf/data/store/user/t2/users/nikmenendez/data_wto3l/2017/DoubleMuon_C.root /cmsuf/data/store/user/nimenend/NanoAOD/Data/DoubleMuon/*C/2109*/*/*.root
-hadd -fk /cmsuf/data/store/user/t2/users/nikmenendez/data_wto3l/2017/DoubleMuon_D.root /cmsuf/data/store/user/nimenend/NanoAOD/Data/DoubleMuon/*D/2109*/*/*.root
-hadd -fk /cmsuf/data/store/user/t2/users/nikmenendez/data_wto3l/2017/DoubleMuon_E.root /cmsuf/data/store/user/nimenend/NanoAOD/Data/DoubleMuon/*E/2109*/*/*.root
-hadd -fk /cmsuf/data/store/user/t2/users/nikmenendez/data_wto3l/2017/DoubleMuon_F.root /cmsuf/data/store/user/nimenend/NanoAOD/Data/DoubleMuon/*F/2109*/*/*.root
+#hadd -fk /cmsuf/data/store/user/t2/users/nikmenendez/data_wto3l/2017/DoubleMuon_B.root /cmsuf/data/store/user/nimenend/NanoAOD/Data/DoubleMuon/*B/2109*/*/*.root
+#hadd -fk /cmsuf/data/store/user/t2/users/nikmenendez/data_wto3l/2017/DoubleMuon_C.root /cmsuf/data/store/user/nimenend/NanoAOD/Data/DoubleMuon/*C/2109*/*/*.root
+#hadd -fk /cmsuf/data/store/user/t2/users/nikmenendez/data_wto3l/2017/DoubleMuon_D.root /cmsuf/data/store/user/nimenend/NanoAOD/Data/DoubleMuon/*D/2109*/*/*.root
+#hadd -fk /cmsuf/data/store/user/t2/users/nikmenendez/data_wto3l/2017/DoubleMuon_E.root /cmsuf/data/store/user/nimenend/NanoAOD/Data/DoubleMuon/*E/2109*/*/*.root
+#hadd -fk /cmsuf/data/store/user/t2/users/nikmenendez/data_wto3l/2017/DoubleMuon_F.root /cmsuf/data/store/user/nimenend/NanoAOD/Data/DoubleMuon/*F/2109*/*/*.root
 
 #hadd -fk /cmsuf/data/store/user/t2/users/nikmenendez/2017_MC_bkg/NanoAOD/DYJetsToLL_M1To10_temp1.root /cmsuf/data/store/user/nimenend/BackgroundGeneration/CRAB_PrivateMC/DYJetsToLL_M1To10/210818*/*/*.root
 #hadd -fk /cmsuf/data/store/user/t2/users/nikmenendez/2017_MC_bkg/NanoAOD/DYJetsToLL_M1To10_temp2.root /cmsuf/data/store/user/nimenend/BackgroundGeneration/CRAB_PrivateMC/DYJetsToLL_M1To10/210820*/*/*.root
@@ -30,3 +30,4 @@ hadd -fk /cmsuf/data/store/user/t2/users/nikmenendez/data_wto3l/2017/DoubleMuon_
 
 #rm -f /cmsuf/data/store/user/t2/users/nikmenendez/2017_MC_bkg/NanoAOD/*_temp*
 
+hadd -fk /cmsuf/data/store/user/t2/users/nikmenendez/signal/NanoAOD/Wto3l_M45.root /cmsuf/data/store/user/nimenend/SignalGeneration/CRAB_PrivateMC/WToZpTo3Mu_M45/22*/0000/*.root

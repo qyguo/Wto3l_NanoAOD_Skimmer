@@ -8,10 +8,11 @@ data_list=()
 
 #bkg_list+=( "DYJetsToLL_M1To10" )
 #bkg_list+=( "DYJetsToLL_M10To50" )
-#bkg_list+=( "DYJetsToLL_M50" )
+##bkg_list+=( "DYJetsToLL_M50" )
 #bkg_list+=( "TTJets_DiLept" )
-bkg_list+=( "WZTo3LNu" )
+#bkg_list+=( "WZTo3LNu" )
 #bkg_list+=( "ZZTo4L" )
+#bkg_list+=( "ZZTo4L_M1Toinf" )
 #bkg_list+=( "WJetsToLNu" )
 #bkg_list+=( "WWTo2L2Nu" )
 
@@ -32,11 +33,11 @@ bkg_list+=( "WZTo3LNu" )
 #data_list+=( "SingleElectron_F" )
 
 for i in ${!data_list[@]}; do
-    python skimmer_Zpeak.py ${data_list[i]}
+    python /orange/avery/nikmenendez/Wto3l/Skimmer/PyNanoSkimmer/skimmer_Zpeak.py ${data_list[i]}
 done
 
 for i in ${!bkg_list[@]}; do
-	python skimmer_Zpeak.py ${bkg_list[i]}
+	python /orange/avery/nikmenendez/Wto3l/Skimmer/PyNanoSkimmer/skimmer_Zpeak.py ${bkg_list[i]}
 done
 
 #python3 Tables/pretty_table.py > Tables/Efficiency_table.txt

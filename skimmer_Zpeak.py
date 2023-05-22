@@ -5,8 +5,11 @@ import sys
 from ROOT import TLorentzVector
 from tqdm import tqdm
 from Utils.DeltaR import deltaR
+from Utils.PartOrigin import PartOrigin
 from out_dict import *
 import concurrent.futures
+
+oto1 = True
 
 dataset = str(sys.argv[1])
 isSignal = 0
@@ -23,8 +26,12 @@ if isSignal==1:
 	sumW_file = "/cmsuf/data/store/user/t2/users/nikmenendez/skimmed/NanoAOD/2017/signal/Zpeak/UL/sumW/"+dataset+".txt"
 elif isMC==1:
 	in_file = "/cmsuf/data/store/user/t2/users/nikmenendez/2017_MC_bkg/ZpX_UL/"+dataset+".root"
-	out_file = "/cmsuf/data/store/user/t2/users/nikmenendez/skimmed/NanoAOD/2017/background/Zpeak/UL/"+dataset+".root"
-	sumW_file = "/cmsuf/data/store/user/t2/users/nikmenendez/skimmed/NanoAOD/2017/background/Zpeak/UL/sumW/"+dataset+".txt"
+	if "DY" in sys.argv[1] and oto1:
+		out_file = "/cmsuf/data/store/user/t2/users/nikmenendez/skimmed/NanoAOD/2017/background/Zpeak/UL/"+dataset+"_M0To1.root"
+		sumW_file = "/cmsuf/data/store/user/t2/users/nikmenendez/skimmed/NanoAOD/2017/background/Zpeak/UL/sumW/"+dataset+"_M0To1.txt"
+	else:
+		out_file = "/cmsuf/data/store/user/t2/users/nikmenendez/skimmed/NanoAOD/2017/background/Zpeak/UL/"+dataset+".root"
+		sumW_file = "/cmsuf/data/store/user/t2/users/nikmenendez/skimmed/NanoAOD/2017/background/Zpeak/UL/sumW/"+dataset+".txt"
 else:
 	in_file = "/cmsuf/data/store/user/t2/users/nikmenendez/data_wto3l/2017/ZpX_UL/"+dataset+".root"
 	out_file = "/cmsuf/data/store/user/t2/users/nikmenendez/skimmed/NanoAOD/2017/data/Zpeak/UL/"+dataset+".root"
@@ -59,11 +66,11 @@ Wmass = 83.0
 Zmass = 91.1876
 
 #Import tree from ROOT
-vars_in = ["run","event","luminosityBlock","nMuon","Muon_pt","Muon_pdgId","Muon_eta","Muon_phi","Muon_mass","Muon_pfRelIso03_all","Muon_tightId","Muon_mediumId","Muon_softId","Muon_mvaId","Muon_ip3d","Muon_sip3d","Muon_dxy","Muon_dz","nJet","Jet_pt","Jet_btagCSVV2","MET_pt","MET_phi","nElectron","Electron_pdgId","Electron_phi","Electron_eta","Electron_mass","Electron_pt","Electron_cutBased","Electron_pfRelIso03_all","Electron_ip3d","Electron_sip3d","Electron_dxy","Electron_dz"]
+vars_in = ["run","event","luminosityBlock","nMuon","Muon_pt","Muon_pdgId","Muon_eta","Muon_phi","Muon_mass","Muon_pfRelIso03_all","Muon_tightId","Muon_mediumId","Muon_softId","Muon_mvaId","Muon_ip3d","Muon_sip3d","Muon_dxy","Muon_dz","nJet","Jet_pt","Jet_btagCSVV2","MET_pt","MET_phi","nElectron","Electron_pdgId","Electron_phi","Electron_eta","Electron_mass","Electron_pt","Electron_cutBased","Electron_pfRelIso03_all","Electron_ip3d","Electron_sip3d","Electron_dxy","Electron_dz","Muon_looseId","Muon_softMvaId","Muon_highPtId"]
 triggers = ["HLT_Ele23_Ele12_CaloIdL_TrackIdL_IsoVL_DZ"]
 vars_in.extend(triggers)
 if isMC:
-	vars_in.extend(["genWeight","Pileup_nTrueInt","Muon_genPartFlav","Electron_genPartFlav"])
+	vars_in.extend(["genWeight","Pileup_nTrueInt","Muon_genPartFlav","Electron_genPartFlav","GenPart_genPartIdxMother","GenPart_pdgId","Muon_genPartIdx","GenPart_pt","GenPart_eta","GenPart_phi","GenPart_mass"])
 if isSignal:
 	vars_in.extend(["GenPart_pdgId","GenPart_eta","GenPart_pt"])
 
@@ -191,6 +198,63 @@ for data in (events.iterate(vars_in)):
 				cause2[i]+=1
 		if not selection[ev]: continue
 	
+		if nGoodM<1:
+			selection[ev] = False
+		if not selection[ev]: continue
+
+		yesPho = True
+		if isMC==1:
+			yesPho = False
+			gen_idx = data["Muon_genPartIdx"][ev][i3]
+			gen_id = data["GenPart_pdgId"][ev][gen_idx]
+
+			mom_idx = data["GenPart_genPartIdxMother"][ev][gen_idx]
+			mom_id = data["GenPart_pdgId"][ev][mom_idx]
+			while (mom_id == gen_id) and (mom_idx>0):
+				mom_idx = data["GenPart_genPartIdxMother"][ev][mom_idx]
+				mom_id = data["GenPart_pdgId"][ev][mom_idx]
+
+			mommom_idx = data["GenPart_genPartIdxMother"][ev][mom_idx]
+			mommom_id = data["GenPart_pdgId"][ev][mommom_idx]
+			while (mommom_id == mom_id) and (mommom_idx>0):
+				mommom_idx = data["GenPart_genPartIdxMother"][ev][mommom_idx]
+				mommom_id = data["GenPart_pdgId"][ev][mommom_idx]
+
+			#gen_deltapT = abs(data["Muon_pt"][ev][i3] - data["GenPart_pt"][ev][gen_idx])
+			#gen_deltaR  = deltaR(data["Muon_eta"][ev][i3],data["Muon_phi"][ev][i3],data["GenPart_eta"][ev][gen_idx],data["GenPart_phi"][ev][gen_idx])
+			origin =  PartOrigin(gen_id,mom_id,mommom_id,data["Muon_pdgId"][ev][i3])
+
+			nPhotonDaughters,nGenMu = 0,0
+			DaughterIdxs = []
+			DaughterIds  = []
+			allIds = []
+			TheseMass = [999.0]
+			if (origin==2):# and (data["nMuon"][ev]==3):
+				yesPho = True
+				ml1, ml2 = 0, 0
+				for gidx in range(len(data["GenPart_genPartIdxMother"][ev])):
+					allIds.append(data["GenPart_pdgId"][ev][gidx])
+					midx = data["GenPart_genPartIdxMother"][ev][gidx]
+					if abs(data["GenPart_pdgId"][ev][gidx])==13:
+							if abs(data["GenPart_pdgId"][ev][midx])!=13: nGenMu+=1
+					if midx==mom_idx:
+						nPhotonDaughters+=1
+						DaughterIdxs.append(gidx)
+						DaughterIds.append(data["GenPart_pdgId"][ev][gidx])
+				if len(DaughterIds)==2:
+					daught1, daught2 = TLorentzVector(), TLorentzVector()
+					daught1.SetPtEtaPhiM(data["GenPart_pt"][ev][DaughterIdxs[0]],data["GenPart_eta"][ev][DaughterIdxs[0]],data["GenPart_phi"][ev][DaughterIdxs[0]],.1056583755)#data["GenPart_mass"][ev][DaughterIdxs[0]])
+					daught2.SetPtEtaPhiM(data["GenPart_pt"][ev][DaughterIdxs[1]],data["GenPart_eta"][ev][DaughterIdxs[1]],data["GenPart_phi"][ev][DaughterIdxs[1]],.1056583755)#data["GenPart_mass"][ev][DaughterIdxs[1]])
+					invMass = (daught1 + daught2).M()
+					TheseMass.append(invMass)
+			
+			if all(i >= 1 for i in TheseMass): yesPho = False
+
+		if "DY" in in_file and oto1:
+			if not yesPho:
+				selection[ev] = False
+			if not selection[ev]: continue
+
 		lep1 = TLorentzVector()
 		lep2 = TLorentzVector()
 		lep1.SetPtEtaPhiM(data["Electron_pt"][ev][i1],data["Electron_eta"][ev][i1],data["Electron_phi"][ev][i1],data["Electron_mass"][ev][i1])
@@ -211,6 +275,7 @@ for data in (events.iterate(vars_in)):
 		output["dzL1"].append(data["Electron_dz"][ev][i1]); output["dzL2"].append(data["Electron_dz"][ev][i2])
 		output["massL1"].append(data["Electron_mass"][ev][i1]); output["massL2"].append(data["Electron_mass"][ev][i2])
 		output["tightIdL1"].append(True); output["tightIdL2"].append(True)
+		output["looseIdL1"].append(True); output["looseIdL2"].append(True)
 		output["medIdL1"].append(True); output["medIdL2"].append(True)
 		output["softIdL1"].append(True); output["softIdL2"].append(True)
 		output["mvaIdL1"].append(True); output["mvaIdL2"].append(True)
@@ -228,6 +293,7 @@ for data in (events.iterate(vars_in)):
 		output["Run"].append(data["run"][ev])
 		output["Event"].append(data["event"][ev])
 		output["LumiSect"].append(data["luminosityBlock"][ev])
+		output["inAcceptance"].append(0)
 	
 		if isMC==1: 
 			output["genWeight"].append(data["genWeight"][ev])
@@ -252,6 +318,7 @@ for data in (events.iterate(vars_in)):
 			output["sip3dL3"].append(data["Muon_sip3d"][ev][i3])
 			output["massL3"].append(data["Muon_mass"][ev][i3])
 			output["tightIdL3"].append(data["Muon_tightId"][ev][i3])
+			output["looseIdL3"].append(data["Muon_looseId"][ev][i3])
 			output["medIdL3"].append(data["Muon_mediumId"][ev][i3])
 			output["softIdL3"].append(data["Muon_softId"][ev][i3])
 			output["mvaIdL3"].append(data["Muon_mvaId"][ev][i3])
@@ -259,10 +326,60 @@ for data in (events.iterate(vars_in)):
 			output["dzL3"].append(data["Muon_dz"][ev][i3])
 			output["dR13"].append(deltaR(lep1.Eta(),lep1.Phi(),lep3.Eta(),lep3.Phi()))
 			output["dR23"].append(deltaR(lep2.Eta(),lep2.Phi(),lep3.Eta(),lep3.Phi()))
+			output["softMvaIdL3"].append(data["Muon_softMvaId"][ev][i3])
+			output["highPtIdL3"].append(data["Muon_highPtId"][ev][i3])
 			if isMC==1:
-				output["sourceL3"].append(data["Muon_genPartFlav"][ev][i3])
+				#gen_idx = data["Muon_genPartIdx"][ev][i3]
+				#gen_id = data["GenPart_pdgId"][ev][gen_idx]
+
+				#mom_idx = data["GenPart_genPartIdxMother"][ev][gen_idx]
+				#mom_id = data["GenPart_pdgId"][ev][mom_idx]
+				#while (mom_id == gen_id) and (mom_idx>0):
+				#	mom_idx = data["GenPart_genPartIdxMother"][ev][mom_idx]
+				#	mom_id = data["GenPart_pdgId"][ev][mom_idx]
+
+				#mommom_idx = data["GenPart_genPartIdxMother"][ev][mom_idx]
+				#mommom_id = data["GenPart_pdgId"][ev][mommom_idx]
+				#while (mommom_id == mom_id) and (mommom_idx>0):
+				#	mommom_idx = data["GenPart_genPartIdxMother"][ev][mommom_idx]
+				#	mommom_id = data["GenPart_pdgId"][ev][mommom_idx]
+
+				##gen_deltapT = abs(data["Muon_pt"][ev][i3] - data["GenPart_pt"][ev][gen_idx])
+				##gen_deltaR  = deltaR(data["Muon_eta"][ev][i3],data["Muon_phi"][ev][i3],data["GenPart_eta"][ev][gen_idx],data["GenPart_phi"][ev][gen_idx])
+				#origin =  PartOrigin(gen_id,mom_id,mommom_id,data["Muon_pdgId"][ev][i3])
+
+				#nPhotonDaughters,nGenMu = 0,0
+                #DaughterIdxs = []
+                #DaughterIds  = []
+                #allIds = []
+                #if (origin==2):# and (data["nMuon"][ev]==3):
+                #    yesPho = True
+                #    ml1, ml2 = 0, 0
+                #    for gidx in range(len(data["GenPart_genPartIdxMother"][ev])):
+                #        allIds.append(data["GenPart_pdgId"][ev][gidx])
+                #        midx = data["GenPart_genPartIdxMother"][ev][gidx]
+                #        if abs(data["GenPart_pdgId"][ev][gidx])==13:
+                #                if abs(data["GenPart_pdgId"][ev][midx])!=13:
+                #                    nGenMu+=1
+                #        if midx==mom_idx:
+                #            nPhotonDaughters+=1
+                #            DaughterIdxs.append(gidx)
+                #            DaughterIds.append(data["GenPart_pdgId"][ev][gidx])
+                #    if len(DaughterIds)==2:
+                #        daught1, daught2 = TLorentzVector(), TLorentzVector()
+                #        daught1.SetPtEtaPhiM(data["GenPart_pt"][ev][DaughterIdxs[0]],data["GenPart_eta"][ev][DaughterIdxs[0]],data["GenPart_phi"][ev][DaughterIdxs[0]],.1056583755)#data["GenPart_mass"][ev][DaughterIdxs[0]])
+                #        daught2.SetPtEtaPhiM(data["GenPart_pt"][ev][DaughterIdxs[1]],data["GenPart_eta"][ev][DaughterIdxs[1]],data["GenPart_phi"][ev][DaughterIdxs[1]],.1056583755)#data["GenPart_mass"][ev][DaughterIdxs[1]])
+                #        invMass = (daught1 + daught2).M()
+                #        TheseMass.append(invMass)
+
+				#if all(i >= 1 for i in TheseMass): yesPho = False
+
+				output["sourceL3"].append(origin)
+				if "DY" in in_file and oto1: output["photon_mass"].append(TheseMass[1])
+				else: output["photon_mass"].append(-1)
 			else:
 				output["sourceL3"].append(0)
+				output["photon_mass"].append(-1)
 		else:
 			output["m3l"].append(-99)
 			output["idL3"].append(-99)
@@ -274,6 +391,7 @@ for data in (events.iterate(vars_in)):
 			output["sip3dL3"].append(-99)
 			output["massL3"].append(-99)
 			output["tightIdL3"].append(-99)
+			output["looseIdL3"].append(-99)
 			output["medIdL3"].append(-99)
 			output["softIdL3"].append(-99)
 			output["mvaIdL3"].append(-99)
@@ -281,10 +399,13 @@ for data in (events.iterate(vars_in)):
 			output["dzL3"].append(-99)
 			output["dR13"].append(-99)
 			output["dR23"].append(-99)
+			output["softMvaIdL3"].append(-99)
+			output["highPtIdL3"].append(-99)
 			if isMC==1:
 				output["sourceL3"].append(-99)
 			else:
 				output["sourceL3"].append(-99)
+			output["photon_mass"].append(-1)
 			
 		output["idL4"].append(-99)
 		output["pTL4"].append(-99)
@@ -295,6 +416,7 @@ for data in (events.iterate(vars_in)):
 		output["sip3dL4"].append(-99)
 		output["massL4"].append(-99)
 		output["tightIdL4"].append(-99)
+		output["looseIdL4"].append(-99)
 		output["medIdL4"].append(-99)
 		output["softIdL4"].append(-99)
 		output["mvaIdL4"].append(-99)

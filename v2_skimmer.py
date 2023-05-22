@@ -1,4 +1,5 @@
 from __future__ import division
+from __future__ import print_function
 import numpy as np
 import uproot
 import sys
@@ -7,7 +8,17 @@ from tqdm import tqdm
 from Utils.DeltaR import deltaR
 from Utils.PartOrigin import PartOrigin
 from out_dict import *
+import matplotlib.pyplot as plt
 import concurrent.futures
+
+ZpX_Sel = True
+
+examples = 0
+nInReg = 0
+untaggedMu = []
+invMasses = []
+passed_sel = 0
+so_far = 0
 
 dataset = str(sys.argv[1])
 isSignal = 0
@@ -18,17 +29,28 @@ if "Muon" in sys.argv[1]:
 	isMC = 0
 in_file = ""
 out_file = ""
+is_DY = "DY" in sys.argv[1]
+if ZpX_Sel:
+	subname = "3mu_ZpX"
+else:
+	subname = "UL"
+
 if isSignal==1:
 	in_file = "/cmsuf/data/store/user/t2/users/nikmenendez/signal/NanoAOD/"+dataset+".root"
-	out_file = "/cmsuf/data/store/user/t2/users/nikmenendez/skimmed/NanoAOD/2017/signal/signal_sel/UL/"+dataset+".root"
-	sumW_file = "/cmsuf/data/store/user/t2/users/nikmenendez/skimmed/NanoAOD/2017/signal/signal_sel/UL/sumW/"+dataset+".txt"
+	out_file = "/cmsuf/data/store/user/t2/users/nikmenendez/skimmed/NanoAOD/2017/signal/signal_sel/"+subname+"/"+dataset+".root"
+	sumW_file = "/cmsuf/data/store/user/t2/users/nikmenendez/skimmed/NanoAOD/2017/signal/signal_sel/"+subname+"/sumW/"+dataset+".txt"
 elif isMC==1:
 	in_file = "/cmsuf/data/store/user/t2/users/nikmenendez/2017_MC_bkg/NanoAOD_UL/"+dataset+".root"
-	out_file = "/cmsuf/data/store/user/t2/users/nikmenendez/skimmed/NanoAOD/2017/background/signal_sel/UL/"+dataset+".root"
-	sumW_file = "/cmsuf/data/store/user/t2/users/nikmenendez/skimmed/NanoAOD/2017/background/signal_sel/UL/sumW/"+dataset+".txt"
+	if is_DY:
+		out_file = "/cmsuf/data/store/user/t2/users/nikmenendez/skimmed/NanoAOD/2017/background/signal_sel/"+subname+"/"+dataset+"_M0To1.root"
+		sumW_file = "/cmsuf/data/store/user/t2/users/nikmenendez/skimmed/NanoAOD/2017/background/signal_sel/"+subname+"/sumW/"+dataset+"_M0To1.txt"
+	else:
+		out_file = "/cmsuf/data/store/user/t2/users/nikmenendez/skimmed/NanoAOD/2017/background/signal_sel/"+subname+"/"+dataset+".root"
+		sumW_file = "/cmsuf/data/store/user/t2/users/nikmenendez/skimmed/NanoAOD/2017/background/signal_sel/"+subname+"/sumW/"+dataset+".txt"
+		
 else:
 	in_file = "/cmsuf/data/store/user/t2/users/nikmenendez/data_wto3l_UL/2017/"+dataset+".root"
-	out_file = "/cmsuf/data/store/user/t2/users/nikmenendez/skimmed/NanoAOD/2017/data/signal_sel/UL/"+dataset+".root"
+	out_file = "/cmsuf/data/store/user/t2/users/nikmenendez/skimmed/NanoAOD/2017/data/signal_sel/"+subname+"/"+dataset+".root"
 
 print("Skimming file %s"%(in_file))
 
@@ -43,6 +65,8 @@ if isMC==1:
 	sumW = 0
 	SumWeights = runs["genEventSumw"].array()
 	sumW = np.sum(SumWeights)
+	if isSignal==1:
+		sumW = events.numentries
 	file_sumW = open(sumW_file,"w")
 	file_sumW.write(str(sumW))
 	file_sumW.close()
@@ -51,23 +75,29 @@ else:
 
 #Define cuts
 cut0, cut1, cut2, cut3, cut4 = 0, 0, 0, 0, 0
-leadingPtCut, subleadingPtCut, trailingPtCut = 12.0, 10.0, 5.0
-iso_cut = 999.0 #0.1
+if not ZpX_Sel: leadingPtCut, subleadingPtCut, trailingPtCut = 12.0, 10.0, 5.0
+else: leadingPtCut, subleadingPtCut, trailingPtCut = 20.0, 10.0, 5.0
+iso_cut = 999.0 #0.3
 sip_cut = 999.0 #4
 dxy_cut = 999.0 #0.05
 dz_cut = 999.0 #0.1
 Wmass = 9999.0 #83.0
+#iso_cut = 0.3
+#sip_cut = 4
+#dxy_cut = 0.05
+#dz_cut = 0.1
+#Wmass = 83.0
 n_other = 0
 
 #Import tree from ROOT
 #triggers = ["HLT_Mu17_TrkIsoVVL_Mu8_TrkIsoVVL","HLT_Mu17_TrkIsoVVL_Mu8_TrkIsoVVL_DZ","HLT_Mu17_TrkIsoVVL_Mu8_TrkIsoVVL_DZ_Mass8","HLT_TripleMu_12_10_5","HLT_TripleMu_10_5_5_DZ"]
 triggers = ["HLT_Mu17_TrkIsoVVL_Mu8_TrkIsoVVL_DZ_Mass8","HLT_TripleMu_12_10_5","HLT_TripleMu_10_5_5_DZ"]
-vars_in = ["run","event","luminosityBlock","nMuon","Muon_pt","Muon_pdgId","Muon_eta","Muon_phi","Muon_mass","Muon_pfRelIso03_all","Muon_tightId","Muon_mediumId","Muon_ip3d","Muon_sip3d","Muon_dxy","Muon_dz","nJet","Jet_pt","Jet_btagCSVV2","MET_pt","MET_phi","Muon_softId","Muon_mvaId"]
+vars_in = ["run","event","luminosityBlock","nMuon","Muon_pt","Muon_pdgId","Muon_eta","Muon_phi","Muon_mass","Muon_pfRelIso03_all","Muon_tightId","Muon_mediumId","Muon_ip3d","Muon_sip3d","Muon_dxy","Muon_dz","nJet","Jet_pt","Jet_btagCSVV2","MET_pt","MET_phi","Muon_softId","Muon_mvaId","Muon_isGlobal","Muon_isTracker","Muon_looseId","Muon_segmentComp"]
 vars_in.extend(triggers)
 if isMC:
-	vars_in.extend(["genWeight","Pileup_nTrueInt","Muon_genPartFlav","GenPart_genPartIdxMother","GenPart_pdgId","Muon_genPartIdx","GenPart_pt","GenPart_eta","GenPart_phi"])
+	vars_in.extend(["genWeight","Pileup_nTrueInt","Muon_genPartFlav","GenPart_genPartIdxMother","GenPart_pdgId","Muon_genPartIdx","GenPart_pt","GenPart_eta","GenPart_phi","GenPart_mass"])
 if isSignal:
-	vars_in.extend(["GenPart_pdgId","GenPart_eta","GenPart_pt"])
+	vars_in.extend(["GenPart_pdgId","GenPart_eta","GenPart_pt","nGenPart"])
 
 #data = events.arrays(vars_in,executor=executor)
 
@@ -94,6 +124,7 @@ for data in (events.iterate(vars_in)):
 	#eff0 = left0/nEntries*100
 	selection = data["nMuon"] >= 0
 	nComp = np.count_nonzero(selection)
+	so_far += nComp
 	if isSignal==1:
 		for ev in (range(len(data["GenPart_pdgId"]))):
 			m_found = 0
@@ -101,6 +132,9 @@ for data in (events.iterate(vars_in)):
 			for i in range(len(gen[0])):
 				if abs(gen[0][i])==13 and abs(gen[1][i])<=2.4 and gen[2][i]>=5: m_found+=1
 			if m_found<3: selection[ev] = False
+
+			if 999888 not in data["GenPart_pdgId"][ev]:
+				selection[ev] = False
 		#left0 += np.count_nonzero(selection)
 		#eff0 = left0/nEntries*100
 	left0 += np.count_nonzero(selection)
@@ -116,7 +150,8 @@ for data in (events.iterate(vars_in)):
 	passedDiMu1 = (data["HLT_Mu17_TrkIsoVVL_Mu8_TrkIsoVVL_DZ_Mass8"]==1)
 	passedDiMu2 = (data["HLT_TripleMu_12_10_5"]==1) #(data["HLT_Mu17_TrkIsoVVL_Mu8_TrkIsoVVL_DZ"]==1) | (data["HLT_Mu17_TrkIsoVVL_Mu8_TrkIsoVVL"]==1)
 	passedTriMu = (data["HLT_TripleMu_10_5_5_DZ"]==1) #| (data["HLT_TripleMu_12_10_5"]==1)
-	selection *= passedDiMu1 | passedDiMu2 | passedTriMu
+	if not ZpX_Sel: selection *= passedDiMu1 | passedDiMu2 | passedTriMu
+	else: selection *= passedDiMu1
 	left2 += np.count_nonzero(selection)
 	#eff2 = left2/left1*100
 	
@@ -169,7 +204,7 @@ for data in (events.iterate(vars_in)):
 			if not passes: continue
 	
 			GoodMu.append(i)
-	
+
 		if len(GoodMu) < 3: 
 			selection[ev] = False
 			for i in cutBy:
@@ -206,13 +241,56 @@ for data in (events.iterate(vars_in)):
 	
 					m3l = (mu1+mu2+mu3).M()
 					if m3l > Wmass:
+					#if (m3l < Wmass) or (m3l > 95):
 						cutBy2.append(4)
 						passes=False
 					if not passes: continue
-	
-					i1 = GoodMu[m1]
-					i2 = GoodMu[m2]
-					i3 = GoodMu[m3]
+
+					if ZpX_Sel:
+						# ======================== FOR 3MU ZPX SELECTION =============================================
+						if (data["Muon_pdgId"][ev][GoodMu[m1]] + data["Muon_pdgId"][ev][GoodMu[m2]]) == 0:
+							M1 = (mu1 + mu2).M()
+							if (data["Muon_pdgId"][ev][GoodMu[m1]] + data["Muon_pdgId"][ev][GoodMu[m3]]) == 0:
+								M2 = (mu1 + mu3).M()
+								if abs(M1-91)<abs(M2-91):
+									z1 = m1
+									z2 = m2
+									z3 = m3
+								else:
+									z1 = m1
+									z2 = m3
+									z3 = m2
+							elif (data["Muon_pdgId"][ev][GoodMu[m2]] + data["Muon_pdgId"][ev][GoodMu[m3]]) == 0:
+								M2 = (mu2 + mu3).M()
+								if abs(M1-91)<abs(M2-91):
+									z1 = m1
+									z2 = m2
+									z3 = m3
+								else:
+									z1 = m2
+									z2 = m3
+									z3 = m1
+						elif (data["Muon_pdgId"][ev][GoodMu[m1]] + data["Muon_pdgId"][ev][GoodMu[m3]]) == 0:
+							M1 = (mu1 + mu3).M()
+							M2 = (mu2 + mu3).M()
+							if abs(M1-91)<abs(M2-91):
+								z1 = m1
+								z2 = m3
+								z3 = m2
+							else:
+								z1 = m2
+								z2 = m3
+								z3 = m1
+
+						#if (M1 < 4) or (M2 < 4): continue
+						i1 = GoodMu[z1]
+						i2 = GoodMu[z2]
+						i3 = GoodMu[z3]
+						# ======================== FOR 3MU ZPX SELECTION =============================================
+					else:
+						i1 = GoodMu[m1]
+						i2 = GoodMu[m2]
+						i3 = GoodMu[m3]
 	
 					foundZp = True
 	
@@ -222,6 +300,8 @@ for data in (events.iterate(vars_in)):
 				cause2[i]+=1
 		if not selection[ev]: continue
 	
+		passed_sel+=1
+
 		lep1 = TLorentzVector()
 		lep2 = TLorentzVector()
 		lep3 = TLorentzVector()
@@ -229,11 +309,14 @@ for data in (events.iterate(vars_in)):
 		lep2.SetPtEtaPhiM(data["Muon_pt"][ev][i2],data["Muon_eta"][ev][i2],data["Muon_phi"][ev][i2],data["Muon_mass"][ev][i2])
 		lep3.SetPtEtaPhiM(data["Muon_pt"][ev][i3],data["Muon_eta"][ev][i3],data["Muon_phi"][ev][i3],data["Muon_mass"][ev][i3])
 
+		yesPho = False
 		if isMC==1:
 			idxs = [i1,i2,i3]
 			gen_id, mom_id, mommom_id = {}, {}, {}
 			gen_deltapT, gen_deltaR, origin = {}, {}, {}
 
+			nInReg+=1
+			TheseMass = [999.0]
 			for idx in idxs:
 				gen_idx = data["Muon_genPartIdx"][ev][idx]
 				gen_id[idx] = data["GenPart_pdgId"][ev][gen_idx]
@@ -245,15 +328,148 @@ for data in (events.iterate(vars_in)):
 					mom_idx = data["GenPart_genPartIdxMother"][ev][mom_idx]
 					mom_id[idx] = data["GenPart_pdgId"][ev][mom_idx]
 
+
 				mommom_idx = data["GenPart_genPartIdxMother"][ev][mom_idx]
 				mommom_id[idx] = data["GenPart_pdgId"][ev][mommom_idx]
 				while (mommom_id[idx] == mom_id[idx]) and (mommom_idx>0):
 					mommom_idx = data["GenPart_genPartIdxMother"][ev][mommom_idx]
 					mommom_id[idx] = data["GenPart_pdgId"][ev][mommom_idx]
 
+				origin[idx] =  PartOrigin(gen_id[idx],mom_id[idx],mommom_id[idx],data["Muon_pdgId"][ev][idx])
+
+				# ======================== FIGURING STUFF OUT =============================================
+				nPhotonDaughters,nGenMu = 0,0
+				DaughterIdxs = []
+				DaughterIds  = []
+				allIds = []
+				if (mom_id[idx]==22):# and (data["nMuon"][ev]==3):
+					yesPho = True
+					ml1, ml2 = 0, 0
+					for gidx in range(len(data["GenPart_genPartIdxMother"][ev])):
+						allIds.append(data["GenPart_pdgId"][ev][gidx])
+						midx = data["GenPart_genPartIdxMother"][ev][gidx]
+						if abs(data["GenPart_pdgId"][ev][gidx])==13: 
+								if abs(data["GenPart_pdgId"][ev][midx])!=13: 
+									nGenMu+=1
+						if midx==mom_idx:
+							nPhotonDaughters+=1
+							DaughterIdxs.append(gidx)
+							DaughterIds.append(data["GenPart_pdgId"][ev][gidx])
+					if len(DaughterIds)==2:
+						daught1, daught2 = TLorentzVector(), TLorentzVector()
+						daught1.SetPtEtaPhiM(data["GenPart_pt"][ev][DaughterIdxs[0]],data["GenPart_eta"][ev][DaughterIdxs[0]],data["GenPart_phi"][ev][DaughterIdxs[0]],.1056583755)#data["GenPart_mass"][ev][DaughterIdxs[0]])
+						daught2.SetPtEtaPhiM(data["GenPart_pt"][ev][DaughterIdxs[1]],data["GenPart_eta"][ev][DaughterIdxs[1]],data["GenPart_phi"][ev][DaughterIdxs[1]],.1056583755)#data["GenPart_mass"][ev][DaughterIdxs[1]])
+						invMass = (daught1 + daught2).M()
+						invMasses.append(invMass)
+						TheseMass.append(invMass)
+						if invMass < .2:
+							print("Muon mom is a photon with %i daughters with invariant mass %.2f : "%(nPhotonDaughters,invMass))#,end='')
+							print("The two muons have pT  = %.2f, %.2f"%(daught1.Pt(),daught2.Pt()))
+							print("The two muons have eta = %.2f, %.2f"%(daught1.Eta(),daught2.Eta()))
+							print("The two muons have phi = %.2f, %.2f"%(daught1.Phi(),daught2.Phi()))
+							print("The two muons have mass= %.2f, %.2f"%(daught1.M(),daught2.M()))
+							print("The two muons have id  = %.2f, %.2f"%(data["GenPart_pdgId"][ev][DaughterIdxs[0]],data["GenPart_pdgId"][ev][DaughterIdxs[1]]))
+						#print("Photon mom is a %i"%(mommom_id[idx]))
+					#else:
+					#	#print("Muon mom is a photon with %i daughters: "%(nPhotonDaughters),end='')
+					#print(*DaughterIds,sep=", ")
+					#print("There are %i loose muons and %i gen muons in this event"%(data["nMuon"][ev],nGenMu))
+					gidx1 = data["Muon_genPartIdx"][ev][i1]
+					gidx2 = data["Muon_genPartIdx"][ev][i2]
+					gidx3 = data["Muon_genPartIdx"][ev][i3]
+					gidMu1 = data["GenPart_pdgId"][ev][data["Muon_genPartIdx"][ev][i1]]
+					gidMu2 = data["GenPart_pdgId"][ev][data["Muon_genPartIdx"][ev][i2]]
+					gidMu3 = data["GenPart_pdgId"][ev][data["Muon_genPartIdx"][ev][i3]]
+
+					if gidx1==DaughterIdxs[0]:
+						ml1 = 1
+					elif gidx2==DaughterIdxs[0]:
+						ml1 = 2
+					elif gidx3==DaughterIdxs[0]:
+						ml1 = 3
+					else:
+						untaggedMu.append(data["GenPart_pt"][ev][DaughterIdxs[0]])
+
+					if gidx1==DaughterIdxs[1]:
+						ml2 = 1
+					elif gidx2==DaughterIdxs[1]:
+						ml2 = 2
+					elif gidx3==DaughterIdxs[1]:
+						ml2 = 3
+					else:
+						untaggedMu.append(data["GenPart_pt"][ev][DaughterIdxs[1]])
+
+
+					#if len(GoodMu)==3:
+					#	print("The three selected muons have id %i, %i, and %i"%(gidMu1,gidMu2,gidMu3))
+					#else:
+					#	for dex in GoodMu:
+					#		if (dex!=i1) and (dex!=i2) and (dex!=i3):
+					#			i4 = dex
+					#			break
+					#	gidx4 = data["Muon_genPartIdx"][ev][i4]
+					#	if gidx4==DaughterIdxs[0]:
+					#		ml1 = 4
+					#	if gidx4==DaughterIdxs[1]:
+					#		ml2 = 4
+					#	gidMu4 = data["GenPart_pdgId"][ev][gidx4]
+					#	#print("The four selected muons have id %i, %i, %i, and %i"%(gidMu1,gidMu2,gidMu3,gidMu4))
+					#if len(DaughterIds)==2:
+					#	print("The two photon daughters are lep %i and lep %i"%(ml1,ml2))
+					#examples+=1
+					#if examples>500 or (so_far/nEntries>.95): 
+					#	print()
+					#	print("%.2f%% of events in CR peak were this category"%((examples/nInReg)*100))
+					#	#print("pTs of untagged muons from phtotons:")
+					#	#print(untaggedMu)
+					#	#print("Only %i events had an untagged mu above 5 GeV"%(np.count_nonzero(untaggedMu>5)))
+					#	#print("Invariant masses of the photon:")
+					#	#print(np.array(invMasses)>1)
+					#	#nBelow1 = np.count_nonzero(np.array(invMasses)<1)/len(invMasses)*100
+					#	nBelow1 = np.count_nonzero(np.array(invMasses)<1)/passed_sel*100
+					#	print("%.2f%% of events the photon has a mass below 1 GeV"%(nBelow1))
+					#	plt.hist(invMasses,bins=24,range=(0,6))
+					#	plt.plot([], [], ' ', label="Total Events in CR: %i"%(passed_sel))
+					#	plt.xlabel("Photon Invariant Mass")
+					#	plt.ylabel("Number of Events")
+					#	plt.title("GEN Photon Mass Distribution in CR")
+					#	plt.legend()
+					#	plt.savefig("Photon_Masses_CR.png")
+					#	quit()
+							
+				# ======================== FIGURING STUFF OUT =============================================
+
+				if all(i >= 1 for i in TheseMass): yesPho = False
 				gen_deltapT[idx] = abs(data["Muon_pt"][ev][idx] - data["GenPart_pt"][ev][gen_idx])
 				gen_deltaR[idx]  = deltaR(data["Muon_eta"][ev][idx],data["Muon_phi"][ev][idx],data["GenPart_eta"][ev][gen_idx],data["GenPart_phi"][ev][gen_idx])
 				origin[idx] =  PartOrigin(gen_id[idx],mom_id[idx],mommom_id[idx],data["Muon_pdgId"][ev][idx])
+
+		if isSignal==1:
+			W_idx = -1
+			for i in range(data["nGenPart"][ev]):
+				if abs(data["GenPart_pdgId"][ev][i])==999888:
+					#print(data["GenPart_pdgId"][ev][i])
+					mommy_idx = data["GenPart_genPartIdxMother"][ev][i]
+					if abs(data["GenPart_pdgId"][ev][mommy_idx])==24:
+						W_idx = mommy_idx
+						break
+					else:
+						print("Z' mother is a %i???"%(data["GenPart_pdgId"][ev][W_idx]))
+			if W_idx>=0:
+				W_gen_mass = data["GenPart_mass"][ev][W_idx]
+			else:
+				for i in range(data["nGenPart"][ev]):
+					print(data["GenPart_pdgId"][ev][i])
+				W_gen_mass = -1
+			print(W_gen_mass)
+			print("****************************************")
+
+		if is_DY:
+			#if yesPho: print()
+			if not yesPho:
+				selection[ev] = False
+			if not selection[ev]: continue
+
 
 		threeleps = lep1+lep2+lep3
 		Met = TLorentzVector()
@@ -268,6 +484,7 @@ for data in (events.iterate(vars_in)):
 		output["sip3dL1"].append(data["Muon_sip3d"][ev][i1]); output["sip3dL2"].append(data["Muon_sip3d"][ev][i2]); output["sip3dL3"].append(data["Muon_sip3d"][ev][i3])
 		output["massL1"].append(data["Muon_mass"][ev][i1]); output["massL2"].append(data["Muon_mass"][ev][i2]); output["massL3"].append(data["Muon_mass"][ev][i3])
 		output["tightIdL1"].append(data["Muon_tightId"][ev][i1]); output["tightIdL2"].append(data["Muon_tightId"][ev][i2]); output["tightIdL3"].append(data["Muon_tightId"][ev][i3])
+		output["looseIdL1"].append(data["Muon_looseId"][ev][i1]); output["looseIdL2"].append(data["Muon_looseId"][ev][i2]); output["looseIdL3"].append(data["Muon_looseId"][ev][i3])
 		output["medIdL1"].append(data["Muon_mediumId"][ev][i1]); output["medIdL2"].append(data["Muon_mediumId"][ev][i2]); output["medIdL3"].append(data["Muon_mediumId"][ev][i3])
 		output["mvaIdL1"].append(data["Muon_mvaId"][ev][i1]); output["mvaIdL2"].append(data["Muon_mvaId"][ev][i2]); output["mvaIdL3"].append(data["Muon_mvaId"][ev][i3])
 		output["softIdL1"].append(data["Muon_softId"][ev][i1]); output["softIdL2"].append(data["Muon_softId"][ev][i2]); output["softIdL3"].append(data["Muon_softId"][ev][i3])
@@ -290,6 +507,7 @@ for data in (events.iterate(vars_in)):
 		output["Run"].append(data["run"][ev])
 		output["Event"].append(data["event"][ev])
 		output["LumiSect"].append(data["luminosityBlock"][ev])
+		output["inAcceptance"].append(left0)
 	
 		if isMC==1: 
 			output["genWeight"].append(data["genWeight"][ev])
@@ -297,7 +515,7 @@ for data in (events.iterate(vars_in)):
 			#output["sourceL1"].append(data["Muon_genPartFlav"][ev][i1]); output["sourceL2"].append(data["Muon_genPartFlav"][ev][i2]); output["sourceL3"].append(data["Muon_genPartFlav"][ev][i3])
 
 			#for idx in idxs:
-			#	if origin[idx]==-1:
+			#	if origin[idx]==2:
 			#		print("gen_id = %i, mom_id = %i, mommom_id = %i"%(gen_id[idx],mom_id[idx],mommom_id[idx]))
 			#		print("gen deltaPt = %.2f, gen deltaR = %.2f"%(gen_deltapT[idx],gen_deltaR[idx]))
 			#		print("")
@@ -305,15 +523,23 @@ for data in (events.iterate(vars_in)):
 			#		if n_other>=50: quit()
 
 			output["sourceL1"].append(origin[i1]); output["sourceL2"].append(origin[i2]); output["sourceL3"].append(origin[i3])
-			output["gen_dPtL1"].append(gen_deltapT[i1]); output["gen_dPtL2"].append(gen_deltapT[i2]); output["gen_dPtL3"].append(gen_deltapT[i3]);
-			output["gen_dRL1"].append(gen_deltaR[i1]); output["gen_dRL2"].append(gen_deltaR[i2]); output["gen_dRL3"].append(gen_deltaR[i3]);
+			#output["gen_dPtL1"].append(gen_deltapT[i1]); output["gen_dPtL2"].append(gen_deltapT[i2]); output["gen_dPtL3"].append(gen_deltapT[i3]);
+			#output["gen_dRL1"].append(gen_deltaR[i1]); output["gen_dRL2"].append(gen_deltaR[i2]); output["gen_dRL3"].append(gen_deltaR[i3]);
+			if is_DY: output["photon_mass"].append(TheseMass[1]);
+			else: output["photon_mass"].append(-1)
 		else: 
 			output["genWeight"].append(1)
 			output["pileupWeight"].append(1)
 			output["sourceL1"].append(-2); output["sourceL2"].append(-2); output["sourceL3"].append(-2)
-			output["gen_dPtL1"].append(-1); output["gen_dPtL2"].append(-1); output["gen_dPtL3"].append(-1);
-			output["gen_dRL1"].append(-1); output["gen_dRL2"].append(-1); output["gen_dRL3"].append(-1);
+			#output["gen_dPtL1"].append(-1); output["gen_dPtL2"].append(-1); output["gen_dPtL3"].append(-1);
+			#output["gen_dRL1"].append(-1); output["gen_dRL2"].append(-1); output["gen_dRL3"].append(-1);
+			output["photon_mass"].append(-1)
 	
+		if isSignal==1:
+			output["GenWMass"].append(W_gen_mass)
+		else:
+			output["GenWMass"].append(-1)
+
 		output["passedDiMu1"].append(passedDiMu1[ev])
 		output["passedDiMu2"].append(passedDiMu2[ev])
 		output["passedTriMu"].append(passedTriMu[ev])
@@ -329,7 +555,7 @@ for data in (events.iterate(vars_in)):
 			output["idL4"].append(data["Muon_pdgId"][ev][i4]); output["pTL4"].append(data["Muon_pt"][ev][i4])
 			output["etaL4"].append(data["Muon_eta"][ev][i4]); output["phiL4"].append(data["Muon_phi"][ev][i4])
 			output["IsoL4"].append(data["Muon_pfRelIso03_all"][ev][i4]); output["ip3dL4"].append(data["Muon_ip3d"][ev][i4]); output["sip3dL4"].append(data["Muon_sip3d"][ev][i4])
-			output["massL4"].append(data["Muon_mass"][ev][i4]); output["tightIdL4"].append(data["Muon_tightId"][ev][i4])
+			output["massL4"].append(data["Muon_mass"][ev][i4]); output["tightIdL4"].append(data["Muon_tightId"][ev][i4]); output["looseIdL4"].append(data["Muon_looseId"][ev][i4])
 			output["medIdL4"].append(data["Muon_mediumId"][ev][i4]); output["softIdL4"].append(data["Muon_softId"][ev][i4]); output["mvaIdL4"].append(data["Muon_mvaId"][ev][i4])
 			output["dxyL4"].append(data["Muon_dxy"][ev][i4]); output["dzL4"].append(data["Muon_dz"][ev][i4])
 		else:
@@ -337,9 +563,18 @@ for data in (events.iterate(vars_in)):
 			output["idL4"].append(-999); output["pTL4"].append(-999)
 			output["etaL4"].append(-999); output["phiL4"].append(-999)
 			output["IsoL4"].append(-999); output["ip3dL4"].append(-999); output["sip3dL4"].append(-999)
-			output["massL4"].append(-999); output["tightIdL4"].append(-999)
+			output["massL4"].append(-999); output["tightIdL4"].append(-999); output["looseIdL4"].append(-999)
 			output["medIdL4"].append(-999); output["softIdL4"].append(-999); output["mvaIdL4"].append(-999)
 			output["dxyL4"].append(-999); output["dzL4"].append(-999)
+
+	prev_len = len(output["idL1"])
+	for key in output:
+		this_len = len(output[key])
+		if this_len!=prev_len:
+			print("%s has wrong fill"%(key))
+			print("%s has %i entries vs %i entries"%(key,this_len,prev_len))
+			print(output[key])
+			exit()
 
 	left5 += np.count_nonzero(selection)
 	pbar.update(nComp)
