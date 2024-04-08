@@ -1,9 +1,9 @@
 import numpy as np
 
 output = {}
-branches = {"Run": long,
-			"Event": long,
-			"LumiSect": long,
+branches = {"Run": np.int64,
+			"Event": np.int64,
+			"LumiSect": np.int64,
 			"nMuons": int,
 			"nGoodMuons": int,
 			"nElectrons": int,
@@ -85,6 +85,7 @@ branches = {"Run": long,
 			"met_phi": float,
 			"genWeight": float,
 			"pileupWeight": float,
+			"passedDiMu0": int,
 			"passedDiMu1": int,
 			"passedDiMu2": int,
 			"passedTriMu": int,
@@ -96,9 +97,9 @@ branches = {"Run": long,
 			#"gen_dRL3": float,
 			"photon_mass": float,
 			"inAcceptance": int,
-			#"GenWMass": float,
-			"softMvaIdL3": int,
-			"highPtIdL3": int,
+			"GenWMass": float,
+			#"softMvaIdL3": int,
+			#"highPtIdL3": int,
 			}
 
 
